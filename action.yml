@@ -1,5 +1,5 @@
 name: TSA Timestamp
-description: Generates a Time Stamp Authority signed timestamp to verify when changes occured.
+description: Generates a Time Stamp Authority signed timestamp to verify when changes occurred.
 branding:
   icon: archive
   color: green
