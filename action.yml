@@ -1,0 +1,32 @@
+name: TSA Timestamp
+description: Generates a Time Stamp Authority signed timestamp to verify when changes occured.
+branding:
+  icon: archive
+  color: green
+on: [push]
+run-name: Generating TSA timestamp
+jobs:
+  Create-Timestamp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install FreeTSA certificates
+        run: wget https://freetsa.org/files/tsa.crt; wget https://freetsa.org/files/cacert.pem
+      - name: Install zip
+        run: sudo apt install zip
+      - name: Zip files
+        run: zip -r archive.zip ${{ github.workspace }}
+      - name: Generate timestamp request file
+        run: openssl ts -query -data archive.zip -no_nonce -sha512 -cert -out ${{ github.sha }}.tsq
+      - name: Download timestamp response file
+        run: "curl -H 'Content-Type: application/timestamp-query' --data-binary '@${{ github.sha }}.tsq' https://freetsa.org/tsr > ${{ github.sha }}.tsr"
+      - name: Verify timestamp
+        run: openssl ts -verify -in ${{ github.sha }}.tsr -queryfile ${{ github.sha }}.tsq -CAfile cacert.pem -untrusted tsa.crt
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: timestamp-${{ github.sha }}
+          path: |
+            ${{ github.sha }}.tsq
+            ${{ github.sha }}.tsr
