@@ -1,0 +1,36 @@
+name: TSA Timestamp
+description: Generates a Time Stamp Authority signed timestamp to verify when changes occurred.
+author: Gavin Douch
+branding:
+  icon: archive
+  color: green
+runs:
+  using: "composite"
+  steps:
+    - name: Check out repository code
+      uses: actions/checkout@v4
+    - name: Install FreeTSA certificates
+      run: wget https://freetsa.org/files/tsa.crt; wget https://freetsa.org/files/cacert.pem
+      shell: bash
+    - name: Install zip
+      run: sudo apt install zip
+      shell: bash
+    - name: Zip files
+      run: zip -r archive.zip $GITHUB_WORKSPACE
+      shell: bash
+    - name: Generate timestamp request file
+      run: openssl ts -query -data archive.zip -no_nonce -sha512 -cert -out $GITHUB_SHA.tsq
+      shell: bash
+    - name: Download timestamp response file
+      run: "curl -H 'Content-Type: application/timestamp-query' --data-binary '@$GITHUB_SHA.tsq' https://freetsa.org/tsr > $GITHUB_SHA.tsr"
+      shell: bash
+    - name: Verify timestamp
+      run: openssl ts -verify -in $GITHUB_SHA.tsq -queryfile file.tsq -CAfile cacert.pem -untrusted tsa.crt
+      shell: bash
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: timestamp-$GITHUB_SHA
+        path: |
+          $GITHUB_SHA.tsq
+          $GITHUB_SHA.tsr
