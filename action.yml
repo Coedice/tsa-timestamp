@@ -16,17 +16,17 @@ jobs:
       - name: Install zip
         run: sudo apt install zip
       - name: Zip files
-        run: zip -r archive.zip ${{ github.workspace }}
+        run: zip -r archive.zip $GITHUB_SHA
       - name: Generate timestamp request file
-        run: openssl ts -query -data archive.zip -no_nonce -sha512 -cert -out ${{ github.sha }}.tsq
+        run: openssl ts -query -data archive.zip -no_nonce -sha512 -cert -out $GITHUB_SHA.tsq
       - name: Download timestamp response file
-        run: "curl -H 'Content-Type: application/timestamp-query' --data-binary '@${{ github.sha }}.tsq' https://freetsa.org/tsr > ${{ github.sha }}.tsr"
+        run: "curl -H 'Content-Type: application/timestamp-query' --data-binary '@$GITHUB_SHA.tsr"
       - name: Verify timestamp
-        run: openssl ts -verify -in ${{ github.sha }}.tsr -queryfile ${{ github.sha }}.tsq -CAfile cacert.pem -untrusted tsa.crt
+        run: openssl ts -verify -in $GITHUB_SHA.tsq -CAfile cacert.pem -untrusted tsa.crt
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: timestamp-${{ github.sha }}
+          name: timestamp-$GITHUB_SHA
           path: |
-            ${{ github.sha }}.tsq
-            ${{ github.sha }}.tsr
+            $GITHUB_SHA.tsq
+            $GITHUB_SHA.tsr
